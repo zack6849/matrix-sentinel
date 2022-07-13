@@ -1,6 +1,5 @@
 import { LogService, MatrixClient, MessageEvent, RichReply, UserID } from "matrix-bot-sdk";
-import { runHelloCommand } from "./hello";
-import * as htmlEscape from "escape-html";
+import config from "../config";
 
 // The prefix required to trigger the bot. The bot will also respond
 // to being pinged directly.
@@ -44,38 +43,18 @@ export default class CommandHandler {
         if (event.isRedacted) return; // Ignore redacted events that come through
         if (event.sender === this.userId) return; // Ignore ourselves
         if (event.messageType !== "m.text") return; // Ignore non-text messages
-
-        // Ensure that the event is a command before going on. We allow people to ping
-        // the bot as well as using our COMMAND_PREFIX.
-        const prefixes = [COMMAND_PREFIX, `${this.localpart}:`, `${this.displayName}:`, `${this.userId}:`];
-        const prefixUsed = prefixes.find(p => event.textBody.startsWith(p));
-        if (!prefixUsed) return; // Not a command (as far as we're concerned)
-
-        // Check to see what the arguments were to the command
-        const args = event.textBody.substring(prefixUsed.length).trim().split(' ');
-
-        // Try and figure out what command the user ran, defaulting to help
-        try {
-            if (args[0] === "hello") {
-                return runHelloCommand(roomId, event, args, this.client);
-            } else {
-                const help = "" +
-                    "!bot hello [user]     - Say hello to a user.\n" +
-                    "!bot help             - This menu\n";
-
-                const text = `Help menu:\n${help}`;
-                const html = `<b>Help menu:</b><br /><pre><code>${htmlEscape(help)}</code></pre>`;
-                const reply = RichReply.createFor(roomId, ev, text, html); // Note that we're using the raw event, not the parsed one!
-                reply["msgtype"] = "m.notice"; // Bots should always use notices
-                return this.client.sendMessage(roomId, reply);
+        if(config.badWords.length > 0){
+            let badwords = 0;
+            config.badWords.forEach(function(word){
+                if(event.content.body.toLowerCase().includes(word.toLowerCase())){
+                    badwords++;
+                }
+            });
+            console.log("Score: " + badwords);
+            if(badwords >= 2){
+                console.log(ev);
+                this.client.banUser(ev.sender, roomId, "You have been banned");
             }
-        } catch (e) {
-            // Log the error
-            LogService.error("CommandHandler", e);
-
-            // Tell the user there was a problem
-            const message = "There was an error processing your command";
-            return this.client.replyNotice(roomId, ev, message);
         }
     }
 }

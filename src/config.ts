@@ -6,6 +6,7 @@ interface IConfig {
     autoJoin: boolean;
     dataPath: string;
     encryption: boolean;
+    badWords: string[];
 }
 
 export default <IConfig>config;

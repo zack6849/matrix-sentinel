@@ -15,3 +15,7 @@ dataPath: "storage"
 # Set to false to disable encryption support. Encrypted data will be
 # stored under dataPath.
 encryption: true
+
+badWords:
+  - GCHQ
+  - grapheneos
